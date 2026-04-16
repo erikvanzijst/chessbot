@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["chessbot"]
+
+[project]
+name = "chessbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "berserk>=0.14.0",
+    "openai>=2.31.0",
+    "python-chess>=1.999",
+    "requests>=2.33.1",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+
+[dependency-groups]
+dev = [
+    "ipython>=9.10.0",
+    "mypy>=1.19.1",
+]

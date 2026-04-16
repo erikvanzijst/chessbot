@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    # Allow Chrome sandboxing:
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp=unconfined
+      - apparmor=unconfined
+    ports:
+      - "5173:5173" # ui
+      - "8000:8000" # api
+    env_file:
+      - env
+    environment:
+      # https://github.com/anthropics/claude-code/issues/1736#issuecomment-3170502150
+      - CLAUDE_CONFIG_DIR=/home/vscode/.claude
+    volumes:
+      - .:/workspace

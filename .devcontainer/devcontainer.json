@@ -1,0 +1,31 @@
+{
+  "name": "caelus",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "app",
+  "remoteUser": "vscode",
+  "overrideCommand": true,
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "forwardPorts": [
+    8000
+  ],
+  "containerEnv": {
+    "SSH_AUTH_SOCK": "/ssh-agent"
+  },
+  "mounts": [
+    "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind",
+    "source=${localEnv:HOME}/.docker/config.json,target=/home/vscode/.docker/config.json,type=bind",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/vscode/.config/opencode,type=bind",
+    "source=${localEnv:HOME}/.config/amp,target=/home/vscode/.config/amp,type=bind",
+    "source=${localEnv:HOME}/.qwen,target=/home/vscode/.qwen,type=bind",
+    "source=${localEnv:HOME}/.gemini,target=/home/vscode/.gemini,type=bind",
+    "source=${localEnv:HOME}/.local/share/opencode,target=/home/vscode/.local/share/opencode,type=bind",
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    "source=./var/.claude,target=/home/vscode/.claude,type=bind",
+    "source=${localEnv:HOME}/.config/git,target=/home/vscode/.config/git,type=bind",
+    "source=${localEnv:SSH_AUTH_SOCK},target=/ssh-agent,type=bind",
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ]
+}
