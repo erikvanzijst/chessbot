@@ -20,10 +20,8 @@ MODEL = os.environ["MODEL"]
 session = berserk.TokenSession(LICHESS_TOKEN)
 client = berserk.Client(session)
 
-llm = OpenAI(
-    base_url=OPENAI_BASE_URL,
-    api_key=OPENAI_API_KEY
-)
+llm = OpenAI(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
+
 
 def call_llm(fen, color, legal_moves):
     prompt = f"""
@@ -53,16 +51,17 @@ ABSOLUTELY CRITICAL RULES TO ABIDE BY:
             temperature=0.2,
             max_tokens=10000,
             stream=False,
-            reasoning_effort="none"
+            reasoning_effort="none",
         )
 
-        logger.debug(response.choices[0].message.reasoning_content.strip())
+        reasoning = response.choices[0].message.reasoning_content.strip()
+        logger.debug(reasoning)
         move = response.choices[0].message.content.strip()
-        return move
+        return move, reasoning
 
     except Exception:
         logger.exception(f"LLM error")
-        return None
+        return None, None
 
 
 def build_board(moves_str):
@@ -95,7 +94,7 @@ def play_game(game_id, bot_id):
     for state in client.bots.stream_game_state(game_id):
         logger.debug(f"State: {json.dumps(state, indent=2, default=str)}")
 
-        if 'winner' in state:
+        if "winner" in state:
             logger.info(f"Game over. Winner: {state['winner']}")
             break
 
@@ -103,7 +102,7 @@ def play_game(game_id, bot_id):
             if state["type"] == "gameFull":
                 white_id = state["white"]["id"]
                 if is_white_bot is None:
-                    is_white_bot = (white_id == bot_id)
+                    is_white_bot = white_id == bot_id
                     logger.info(f"Playing as {'white' if is_white_bot else 'black'}")
                 moves = state["state"]["moves"]
                 board = build_board(moves)
@@ -125,13 +124,23 @@ def play_game(game_id, bot_id):
 
             legal_moves = [m.uci() for m in board.legal_moves]
 
-            llm_move = call_llm(board.fen(), 'white' if is_white_bot else 'black', legal_moves)
+            llm_move, reasoning = call_llm(
+                board.fen(), "white" if is_white_bot else "black", legal_moves
+            )
             move = choose_safe_move(board, llm_move)
 
             logger.info(f"Playing move: {move}")
 
             try:
                 client.bots.make_move(game_id, move)
+                # TODO: Lichess has a hard 140 char limit on chat messages
+                # if reasoning:
+                #     try:
+                #         client.board.post_message(
+                #             game_id, reasoning[:500], room="player"
+                #         )
+                #     except Exception as e:
+                #         logger.warning(f"Failed to send chat: {e}")
             except Exception as e:
                 logger.exception(f"Failed to send move: {e}")
 
@@ -143,7 +152,6 @@ def main():
     logger.info(f"Logged in as: {bot_id}")
 
     for event in client.bots.stream_incoming_events():
-
         if event["type"] == "challenge":
             challenge_id = event["challenge"]["id"]
             logger.info(f"Accepting challenge {challenge_id}")
