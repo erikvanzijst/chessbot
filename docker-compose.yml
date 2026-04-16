@@ -3,15 +3,6 @@ services:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
-    # Allow Chrome sandboxing:
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - seccomp=unconfined
-      - apparmor=unconfined
-    ports:
-      - "5173:5173" # ui
-      - "8000:8000" # api
     env_file:
       - env
     environment:

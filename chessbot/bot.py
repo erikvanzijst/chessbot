@@ -12,9 +12,6 @@ from chessbot.log import setup_logging
 logger = setup_logging("chessbot")
 
 
-# -----------------------------
-# Config
-# -----------------------------
 LICHESS_TOKEN = os.environ["LICHESS_TOKEN"]
 OPENAI_BASE_URL = os.environ["OPENAI_BASE_URL"]
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
@@ -90,9 +87,6 @@ def choose_safe_move(board, llm_move):
     return random.choice(legal_moves)
 
 
-# -----------------------------
-# Game loop
-# -----------------------------
 def play_game(game_id, bot_id):
     logger.info(f"Starting game {game_id}")
 
