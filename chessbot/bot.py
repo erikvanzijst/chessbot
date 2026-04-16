@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import random
 from threading import Thread
@@ -82,67 +83,70 @@ def choose_safe_move(board, llm_move):
     if llm_move in legal_moves:
         return llm_move
 
-    logger.warning(f"Invalid LLM move: {llm_move}, falling back")
+    logger.warning(f"Invalid LLM move: {llm_move}, falling back to a random move")
     return random.choice(legal_moves)
 
 
 def play_game(game_id, bot_id):
     logger.info(f"Starting game {game_id}")
 
-    is_white_bot = None
+    color = None
+    opponent_id = None
+
+    def log(msg, level=logging.INFO):
+        logger.log(level, f"[{game_id} - {opponent_id}] {msg}")
 
     for state in client.bots.stream_game_state(game_id):
         logger.debug(f"State: {json.dumps(state, indent=2, default=str)}")
 
         if "winner" in state:
-            logger.info(f"Game over. Winner: {state['winner']}")
+
+            log(f"Game over. Winner: {bot_id if (state['winner'] == color) else opponent_id}")
+            break
+        elif "stalemate" in state:
+            log("Stalemate")
             break
 
         elif state["type"] in ["gameFull", "gameState"]:
             if state["type"] == "gameFull":
-                white_id = state["white"]["id"]
-                if is_white_bot is None:
-                    is_white_bot = white_id == bot_id
-                    logger.info(f"Playing as {'white' if is_white_bot else 'black'}")
+                color = "white" if state["white"]["id"] == bot_id else "black"
+                opponent_id = state["white"]["id"] if state["black"]["id"] == bot_id else state["black"]["id"]
+
+                log(f"Playing as {color}")
                 moves = state["state"]["moves"]
                 board = build_board(moves)
 
             else:
                 moves = state["moves"]
                 board = build_board(moves)
-                if is_white_bot is None:
+                if color is None:
                     continue
 
-            logger.debug(f"Constructing board from moves")
-            logger.debug(f"Board: {board.fen()}")
+            log(f"Constructing board from moves", logging.DEBUG)
+            log(f"Board: {board.fen()}", logging.DEBUG)
 
-            if not is_our_turn(board, is_white_bot):
-                logger.info("Not our turn")
+            if not is_our_turn(board, color == "white"):
+                log(f"{opponent_id}'s turn")
                 continue
-
-            logger.info("Our turn")
+            else:
+                log("Our turn")
 
             legal_moves = [m.uci() for m in board.legal_moves]
 
-            llm_move, reasoning = call_llm(
-                board.fen(), "white" if is_white_bot else "black", legal_moves
-            )
+            llm_move, reasoning = call_llm(board.fen(), color, legal_moves)
             move = choose_safe_move(board, llm_move)
 
-            logger.info(f"Playing move: {move}")
+            log(f"Playing move: {move}")
 
-            try:
-                client.bots.make_move(game_id, move)
-                # TODO: Lichess has a hard 140 char limit on chat messages
-                # if reasoning:
-                #     try:
-                #         client.board.post_message(
-                #             game_id, reasoning[:500], room="player"
-                #         )
-                #     except Exception as e:
-                #         logger.warning(f"Failed to send chat: {e}")
-            except Exception as e:
-                logger.exception(f"Failed to send move: {e}")
+            client.bots.make_move(game_id, move)
+            # TODO: Lichess has a hard 140 char limit on chat messages
+            # if reasoning:
+            #     try:
+            #         client.board.post_message(
+            #             game_id, reasoning[:500], room="player"
+            #         )
+            #     except Exception as e:
+            #         logger.warning(f"Failed to send chat: {e}")
 
 
 def main():
