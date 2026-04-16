@@ -1,0 +1,16 @@
+.git
+.idea
+.devcontainer
+.venv
+env
+dev
+AGENTS.md
+docker-compose.yml
+Dockerfile
+LICENSE
+README.md
+ai.py
+chessbot.egg-info
+.dockerignore
+.gitignore
+var
