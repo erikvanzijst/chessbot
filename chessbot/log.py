@@ -34,7 +34,9 @@ def setup_logging(name="ai", level=logging.DEBUG):
     # Prevent adding multiple handlers if setup_logging is called multiple times
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stderr)
-        formatter = ColoredFormatter("%(levelname)s: %(message)s")
+        formatter = ColoredFormatter(
+            "%(asctime)s - %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
