@@ -100,11 +100,10 @@ def play_game(game_id, bot_id):
         logger.debug(f"State: {json.dumps(state, indent=2, default=str)}")
 
         if "winner" in state:
-
             log(f"Game over. Winner: {bot_id if (state['winner'] == color) else opponent_id}")
             break
-        elif "stalemate" in state:
-            log("Stalemate")
+        elif state.get("status") == "stalemate":
+            log("Game over. Stalemate.")
             break
 
         elif state["type"] in ["gameFull", "gameState"]:
