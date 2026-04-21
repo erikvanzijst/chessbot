@@ -142,6 +142,7 @@ def play_game(game_id, bot_id):
                 try:
                     # Lichess has a hard 140 char limit on chat messages
                     client.bots.post_message(game_id, f"{move}: {reason[:133]}")
+                    client.bots.post_message(game_id, f"{move}: {reason[:133]}", spectator=True)
                 except Exception as e:
                     logger.warning(f"Failed to send chat: {e}")
 
