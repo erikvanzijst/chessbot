@@ -36,13 +36,15 @@ The only currently available legal moves are:
 
 You must choose the next move to make.
 
+You need to return a very brief, condensed reason for why are making the move (one line, less than 120 characters -- it's going into a chat window), followed by a newline and then on the next line only the move in UCI format (e.g. e2e4).
+
 ABSOLUTELY CRITICAL RULES TO ABIDE BY:
 - Given the position, immediately return the best move
 - Do NOT explain
 - Do NOT include reasoning
 - Do NOT think step-by-step
 - You MUST choose ONLY from the legal moves list
-- RETURN ONLY A MOVE IN UCI FORMAT -- NO OTHER OUTPUT (e.g. e2e4)
+- Return a short (<120 chars) reason for the move, followed by a newline and then on the next line only the move in UCI format (e.g. e2e4) -- NO OTHER OUTPUT
 """
 
     try:
@@ -50,13 +52,12 @@ ABSOLUTELY CRITICAL RULES TO ABIDE BY:
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2,
-            max_tokens=10000,
+            max_tokens=15000,
             stream=False,
             reasoning_effort="none",
         )
 
         reasoning = response.choices[0].message.reasoning_content.strip()
-        logger.debug(reasoning)
         move = response.choices[0].message.content.strip()
         return move, reasoning
 
@@ -132,20 +133,21 @@ def play_game(game_id, bot_id):
 
             legal_moves = [m.uci() for m in board.legal_moves]
 
-            llm_move, reasoning = call_llm(board.fen(), color, legal_moves)
-            move = choose_safe_move(board, llm_move)
+            content, reasoning = call_llm(board.fen(), color, legal_moves)
+            logger.debug(reasoning)
+            lines = content.splitlines()
+            move = choose_safe_move(board, lines[-1])
+            reason = "" if len(lines) < 2 else lines[-2]
+            if reason:
+                try:
+                    # Lichess has a hard 140 char limit on chat messages
+                    client.board.post_message(game_id, f"{move}: {reason[:133]}", room="player")
+                except Exception as e:
+                    logger.warning(f"Failed to send chat: {e}")
 
-            log(f"Playing move: {move}")
+            log(f"Playing move: {move} -- {reason}")
 
             client.bots.make_move(game_id, move)
-            # TODO: Lichess has a hard 140 char limit on chat messages
-            # if reasoning:
-            #     try:
-            #         client.board.post_message(
-            #             game_id, reasoning[:500], room="player"
-            #         )
-            #     except Exception as e:
-            #         logger.warning(f"Failed to send chat: {e}")
 
 
 def main():
