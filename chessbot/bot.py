@@ -159,9 +159,16 @@ def main():
 
     for event in client.bots.stream_incoming_events():
         if event["type"] == "challenge":
-            challenge_id = event["challenge"]["id"]
-            logger.info(f"Accepting challenge {challenge_id}")
-            client.bots.accept_challenge(challenge_id)
+            logger.info(f"Received challenge: {json.dumps(event, indent=2, default=str)}")
+            challenge = event["challenge"]
+            challenge_id = challenge["id"]
+            time_control_type = challenge.get("timeControl", {}).get("type")
+            if time_control_type in ("unlimited", "correspondence"):
+                logger.info(f"Accepting challenge {challenge_id} (time control: {time_control_type})")
+                client.bots.accept_challenge(challenge_id)
+            else:
+                logger.info(f"Declining challenge {challenge_id} (time control: {time_control_type})")
+                client.bots.decline_challenge(challenge_id, reason="timeControl")
 
         elif event["type"] == "gameStart":
             game_id = event["game"]["id"]
